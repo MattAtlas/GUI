@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import sys
 import struct
+import errno
 
 def send_msg(conn, msg):
 	msg = struct.pack('>I',len(msg)) + msg
@@ -31,38 +32,40 @@ print "Waiting for client to connect"
 conn, addr = sock.accept()
 print 'Connected with ' + addr[0] + ':' + str(addr[1])
 
-
-#try:
-#while True:
-
 vc = cv2.VideoCapture(0)
-#vc.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 320)
-#vc.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 240)
+
 
 retval,image = vc.read()
 
-while retval:
-	#print image.shape
-	image = np.array(image,dtype="uint8")
+while True:
+	try:
+		image = np.array(image,dtype="uint8")
 
-	encode_param = [cv2.IMWRITE_JPEG_QUALITY,50]
-	result,encimg = cv2.imencode(".jpg",image,encode_param)
-	#decimg = cv2.imdecode(encimg,1)
-	print encimg.shape
-	print encimg.size
-	print type(encimg)
-	#print type(jimage)
-	#cv2.imshow('Original image',jimage)
-	#cv2.waitKey(0)
-	#cv2.destroyAllWindows() 
-	#image = image.flatten().tostring()
-	image = encimg.flatten().tostring()
+		encode_param = [cv2.IMWRITE_JPEG_QUALITY,30]
+		result,encimg = cv2.imencode(".jpg",image,encode_param)
 
-	send_msg(conn, image)
-	retval,image = vc.read()
-	time.sleep(1/30)
+		image = encimg.flatten().tostring()
 
-#except KeyboardInterrupt:
+		send_msg(conn, image)
+		retval,image = vc.read()
+		time.sleep(1/40)
 
-print "closing socket"
-sock.close()
+	except socket.error, e:
+		if isinstance(e.args, tuple):
+			print "errno is %d" % e[0]
+			if e[0] == errno.EPIPE:
+			   # remote peer disconnected
+			   print "Detected remote disconnect"
+			else:
+			   # determine and handle different error
+			   pass
+		else:
+			print "socket error ", e
+		conn.close()
+		break
+	except IOError, e:
+		# Hmmm, Can IOError actually be raised by the socket module?
+		print "Got IOError: ", e
+		break
+
+	print "closing socket"
