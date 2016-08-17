@@ -26,27 +26,30 @@ class Video(threading.Thread):
 
 		self.vidFrame = tk.Frame(master, width=640, height=480)
 		self.vidFrame.pack(fill=tk.BOTH)
-		print "Frame is packed. "
 
 		self.vidLabel = tk.Label(self.vidFrame)
 		self.vidLabel.pack(fill=tk.BOTH)
-		#print "Label is packed.   About to enter showVideo()."
+		
 		self.showVideo()
 
 	def recv_msg(self, buff):
 		i = 0
 		size = ""
-		while i < 4:
+		for i in range(0,4):
+		#while i < 4:
 			raw_size = self.sock.recv(1)
 			size += "%s" % (raw_size.encode('hex'))
-			i += 1
+		#	i += 1
 		size = int(size,16)
-		print size
+		#print "4 byte size packet = " + str(size)
 		data = ""
 		while size > 0:
-			data += self.sock.recv(buff)
-			size -= buff
-		print type(data)
+			if size > buff:
+				data += self.sock.recv(buff)
+				size -= buff
+			else:
+				data += self.sock.recv(size)
+				size = 0
 		return data
 
 	def showVideo(self):
@@ -55,6 +58,7 @@ class Video(threading.Thread):
 		b_data = np.fromstring(raw_data, dtype="uint8")
 		decimg = cv2.imdecode(b_data,1)
 		decimg = np.reshape(decimg,(480,640,3))
+
 		img = Image.fromarray(decimg)
 		imgtk = ImageTk.PhotoImage(image=img)
 		self.vidLabel.configure(image=imgtk)
@@ -69,14 +73,13 @@ class tkinterGUI(tk.Frame):
 		top.wm_geometry("640x480")
 		self.pack()
 
-		print "just before calling videoThread."
 		videoThread  = Video(self)
 
 		videoThread.setDaemon(True)
 
 		videoThread.start()
 
-		#print '# active threads are ',threading.enumerate()
+		print '# active threads are ',threading.enumerate()
 
 
 def startTkinter():
