@@ -7,7 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg #, NavigationToo
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from matplotlib import style, ticker
-
+import struct
 import csv
 import traceback
 import cv2
@@ -205,29 +205,58 @@ class send(threading.Thread): #This class is called to send the drone heartbeat,
 
 #This class contains information pretaining to the drone currently being flown by this ground station
 class myUAVThreadClass(threading.Thread): 
-	def __init__(self,master):
+	def __init__(self,master):					# Need to bring in UAV info.. bat, name, signal
 		threading.Thread.__init__(self)
 		myUAVFrame = tk.Frame(master)
-		myUAVFrame.place(x=0,y=0,width=w,height=h)
+		myUAVFrame.place(x=0, y=0, width=0.5*w, height=h)
 		myUAVFrame.rowconfigure(0, weight=1)
 		myUAVFrame.rowconfigure(1, weight=1)
 		myUAVFrame.rowconfigure(2, weight=1)
 		myUAVFrame.rowconfigure(3, weight=1)
+		myUAVFrame.columnconfigure(0, weight=1)
 		
+		UAVdataFrame = tk.Frame(master)
+		UAVdataFrame.place(x=0.5*w, y=0, width=0.5*w, height=h)
+		UAVdataFrame.rowconfigure(0, weight=1)
+		UAVdataFrame.rowconfigure(1, weight=1)
+		UAVdataFrame.rowconfigure(2, weight=1)
+		UAVdataFrame.rowconfigure(3, weight=1)
+		UAVdataFrame.columnconfigure(0, weight=1)	
+
 		batteryLife = 75 #This variable contains the current [Voltage] of the battery
 		signalStrength = 86 #This variable contains the signal strength of the connection between the ground station and the drone
-		upTime = 524.53 #This variable contains the total time the drone has been active for, starting from the time the BBB was turned on
-		myUAV = 'Hot' #This variable contains the name of the drone which is currently connected
+		flightTime = 524.53 #This variable contains the total time the drone has been active for, starting from the time the BBB was turned on
+		myUAV = 'Azog' #This variable contains the name of the drone which is currently connected
 		
-		batteryLabel = tk.Label(myUAVFrame, text = "Battery Life: ", font="-weight bold")
-		signalLabel = tk.Label(myUAVFrame, text = "Signal Strength: ", font="-weight bold")
-		upTimeLabel = tk.Label(myUAVFrame, text = "Up Time: ", font="-weight bold")
-		myUAVName = tk.Label(myUAVFrame, text = "UAV Name: ", font="-weight bold")	
-		
+		batt = tk.StringVar()
+		batt.set(batteryLife)
+		sig  = tk.StringVar()
+		sig.set(signalStrength)
+		uptime = tk.StringVar()
+		uptime.set(flightTime)
+		uavName = tk.StringVar()
+		uavName.set(myUAV)
+
+		batteryLabel = tk.Label(myUAVFrame, text = " Battery Life: ", font="-weight bold")
+		signalLabel  = tk.Label(myUAVFrame, text = " Signal Strength: ", font="-weight bold")
+		upTimeLabel  = tk.Label(myUAVFrame, text = " Flight Time: ", font="-weight bold")
+		myUAVName    = tk.Label(myUAVFrame, text = " UAV Name: ", font="-weight bold")
+
+		batteryValue = tk.Label(UAVdataFrame, textvariable=batt, font="-weight bold")	
+		signalValue = tk.Label(UAVdataFrame, textvariable=sig,  font="-weight bold")
+		timeValue = tk.Label(UAVdataFrame, textvariable=uptime, font="-weight bold")	
+		nameValue = tk.Label(UAVdataFrame, textvariable=uavName, font="-weight bold")		
+				
 		batteryLabel.grid(row=0, column=0, sticky=tk.E)
 		signalLabel.grid(row=1, column=0, sticky=tk.E)
 		upTimeLabel.grid(row=2, column=0, sticky=tk.E)
 		myUAVName.grid(row=3, column=0, sticky=tk.E)
+
+		batteryValue.grid(row=0, column=0, sticky=tk.W)
+		signalValue.grid(row=1, column=0, sticky=tk.W)
+		timeValue.grid(row=2, column=0, sticky=tk.W)
+		nameValue.grid(row=3, column=0, sticky=tk.W)
+		#batteryValue.grid(row=0, column=1, sticky=tk.W)
 		
 	def run(self):
 		i=0
@@ -241,7 +270,7 @@ class otherdrones(threading.Thread):
 	def __init__(self,master):
 		threading.Thread.__init__(self)
 		otherDroneCanvas = tk.Canvas(master) # to add scroll bar
-		otherDroneCanvas.place(x=w,y=0,width=screenW-w,height=h/3)
+		otherDroneCanvas.place(x=w, y=0, width=screenW-w, height=h/3)
 		# Intialize places for
 		i=0 # counter for referencing objects in the list
 		self.allDroneDict=dict() # initalizing empty dictionary 
@@ -356,7 +385,7 @@ class loggingThreadClass(threading.Thread): #This class records any data which t
 class settingsThreadClass(threading.Thread): #User selected flight modes, only one modes is viable at any point in time from each of the following modes: Flight control mode, Flight auto mode, and Flight kill mode.
 	def __init__(self,master):
 		threading.Thread.__init__(self)
-		settingsFrame=tk.Frame(master)
+		settingsFrame = tk.Frame(master)
 		#Place all of the buttons for each of the possible modes
 		settingsFrame.place(x=w, y=int(h/3), width=screenW-w, height=int(2*h/3))
 
@@ -410,7 +439,7 @@ class settingsThreadClass(threading.Thread): #User selected flight modes, only o
 		killFrame = tk.Frame(master)
 		killFrame.place(x=0, y=0.9*screenH, width=w, height=0.1*screenH)	
 		killButton = tk.Button(killFrame, text="Kill Drone", font="-weight bold", command = lambda : FlightModeState(k,c,a), bg ="red")
-		killButton.place(x=0,y=0,width=w,height=0.1*screenH)
+		killButton.place(x=0, y=0, width=w, height=0.1*screenH)
 
 		#Kill Mode Flight Buttons
 		# KillModeButton_Fly 				= tk.Radiobutton(FlightKillModeFrame, text = "Fly", variable = k,
@@ -611,7 +640,7 @@ class statisticsThreadClass(threading.Thread): #Based on the User selected optio
 			sleep(.12) #Sleep for .12 seconds			
 		self.canvas.draw()
 		
-	def Plot(self,var_name, var_state, canvas): #If a option is de-selected by the user then the data will be removed from the Plot
+	def Plot(self, var_name, var_state, canvas): #If a option is de-selected by the user then the data will be removed from the Plot
 		if var_state == 0:				
 			if var_name is "X_Position":
 				self.xPosition_line.set_data([],[])
@@ -1239,36 +1268,91 @@ class statisticsThreadClass(threading.Thread): #Based on the User selected optio
 		canvas.draw()
 
 
+
+class getFrame(threading.Thread):
+	def __init__(self, master, q):
+		threading.Thread.__init__(self)
+		self.master = master
+		self.q = q
+		HOST = 'localhost'
+		PORT = 8888
+		self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		print "Socket created"
+
+		ADDR = (HOST,PORT)
+		self.sock.bind(ADDR)
+
+		self.run()
+
+	def recvAll(self):
+
+		buff = 4096*2
+		data = ""
+		while True:
+			raw_data = self.sock.recv(12+buff)
+			F, N, I, i = struct.unpack('>IIHH', raw_data[0:12]) 		# actually [0:9]
+			if i == 0:													# first packet of frame
+				break
+		data += raw_data[12:buff+12]									# actually [10:buff+10]
+		frame = F
+		n = 1
+		while True:
+			raw_data = self.sock.recv(12+buff)
+			F, N, I, i = struct.unpack('>IIHH', raw_data[0:12]) 		# actually [0:9]
+			if F != frame:
+				data = None
+				break
+			data += raw_data[12:buff+12]								# actually [10:buff+10]
+			n += 1
+			if n > I:
+				break
+		return data
+
+
+	def run(self):
+		if self.q.empty() == True:
+			data = self.recvAll()
+			self.q.put(data)
+			sys.stdout.write("Frames in queue : %s\r" % str(self.q.qsize()))
+			sys.stdout.flush()
+
+		self.master.update_idletasks()
+		self.master.after(20, lambda: self.run())
+
+
+
 class Video(threading.Thread):
 	# Manages video streaming and Video Controls
-	def __init__(self, master):
+	def __init__(self, master, q):
 		threading.Thread.__init__(self)
-
+		self.q = q
 		self.master = master
 		self.vidFrame = tk.Frame(master, bg='orangered')
 		self.vidFrame.place(x=w, y=h, width=vidW, height=vidH)
-		HOST = 'localhost'
-		PORT = 8888
-		self.sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		print "Socket created"
+		#HOST = 'localhost'
+		#PORT = 8888
+		#self.sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		#self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		#print "Socket created"
 
-		server_address = (HOST,PORT)
-		self.sock.connect(server_address)
-		
+		#server_address = (HOST,PORT)
+		#self.sock.connect(server_address)	# TCP
+		#self.sock.bind(server_address)		# UDP
+		#print "bind successful"
 		# Intialize vidControl Frame
 		vidControl = tk.Frame(master,bg='cyan')
 		vidControl.place(x=w+vidW, y=h, width=w, height=0.2*screenH)
 
 		self.recordButton = tk.Button(vidControl, 
-										text="Record", 
+										text = "Record", 
 										bd = 2,
-										bg= "Red",
-										command= self.recordVideo)
+										bg = "Red",
+										command = self.recordVideo)
 
 		self.recordButton.place(x=0, y=0, width=0.5*w, height=0.2*screenH)
 		screenshotButton = tk.Button(vidControl, 
 										text = "Screen Capture",
-										command=self.screenshot)
+										command = self.screenshot)
 
 		screenshotButton.place(x=0.5*w, y=0, width=0.5*w, height=0.2*screenH)
 
@@ -1278,16 +1362,16 @@ class Video(threading.Thread):
 		self.takeScreenShot = 0 # Intialize screenshot toggle to be zerod
 		self.cameraChannelOnVideo = 0 # Intialize Camera Channel to default to zero
 		self.recordingVideo = 0
-	
+		print "bottom of video init"
 		self.showVideo()
 
-
+	'''
 	def recv_msg(self, buff):
 		i = 0
 		size = ""
 		for i in range(0,4):
 			raw_size = self.sock.recv(1)
-			size += "%s" % (raw_size.encode('hex'))
+			size +=  % (raw_size.encode('hex'))
 
 		size = int(size,16)
 		data = ""
@@ -1299,13 +1383,31 @@ class Video(threading.Thread):
 				data += self.sock.recv(size)
 				size = 0
 		return data
-
-
+	
+	def recv_msg(self):
+		buff = 4096*2
+		data = ""
+		while True:
+			raw_data = self.sock.recv(10+buff)
+			frame, N, I, i = struct.unpack('>HIHH', raw_data[0:10]) 	# actually [0:9]
+			if i == 0:
+				break
+		data += raw_data[10:buff+10]								# actually [10:buff+10]
+		n = 1
+		while True:
+			raw_data = self.sock.recv(10+buff)
+			frame, N, I, i = struct.unpack('>HIHH', raw_data[0:10]) 	# actually [0:9]		
+			data += raw_data[10:buff+10]								# actually [10:buff+10]
+			n += 1
+			if n > I:
+				break
+		return data
+	'''
 	def recordVideo(self):
 		try:
 			self.recordingVideo = 1
 			fourcc = cv2.cv.CV_FOURCC('D','I','V','X')
-			outputFPS = 25.0
+			outputFPS = 20.0
 			self.vidWriter = cv2.VideoWriter('Video_'+str(self.cameraChannelOnVideo)+
 			               '_'+strftime("%c")+'.avi', fourcc, outputFPS, (640, 480), True)
 			
@@ -1334,38 +1436,37 @@ class Video(threading.Thread):
 		
 	def showVideo(self):
 
-		raw_data = self.recv_msg(1024)		# string
-		b_data = np.fromstring(raw_data, dtype="uint8")
-		decimg = cv2.imdecode(b_data,1)
-		decimg = np.reshape(decimg,(480,640,3))
+		if self.q.empty() == False:
+			raw_data = self.q.get()
+			self.q.task_done()
 
-		if self.recordingVideo == 1:
-			self.vidWriter.write(decimg)
-
-		
-		#b,g,r = cv2.split(decimg)
-		#decimg = cv2.merge((r,g,b))
-		img = Image.fromarray(decimg)
-
-		# save image if screenshot toggle is on
-		if self.takeScreenShot == 1:
-			img.save('Camera('+str(self.cameraChannelOnVideo)+')_'+strftime("%c"),'jpeg')
-			self.takeScreenShot=0
+			if raw_data != None:
+				b_data = np.fromstring(raw_data, dtype="uint8")
+				decimg = cv2.imdecode(b_data,1)
+				decimg = np.reshape(decimg,(480,640,3))
 
 
+				if self.recordingVideo == 1:
+					self.vidWriter.write(decimg)
 
+				b,g,r = cv2.split(decimg)
+				decimg = cv2.merge((r,g,b))
+				img = Image.fromarray(decimg)
 
+				# save image if screenshot toggle is on
+				if self.takeScreenShot == 1:
+					img.save('Camera('+str(self.cameraChannelOnVideo)+')_'+strftime("%c"),'jpeg')
+					self.takeScreenShot=0
 
-		if screenW == 1920:
-			img = img.resize((960,720),Image.ANTIALIAS) ##### sloppy... fix this
+				if screenW == 1920:
+					img = img.resize((960,720),Image.ANTIALIAS) ##### sloppy... fix this
 
-		imgtk = ImageTk.PhotoImage(image=img)
+				imgtk = ImageTk.PhotoImage(image=img)
+				self.vidLabel.configure(image=imgtk)
+				self.vidLabel.image = imgtk
 
-		self.vidLabel.configure(image=imgtk)
-		self.vidLabel.image = imgtk
-		self.vidLabel.update_idletasks()
-		
-		self.vidLabel.after(0, self.showVideo)
+		self.master.update_idletasks()
+		self.master.after(0, lambda: self.showVideo())
 
 		
 class tkinterGUI(tk.Frame):
@@ -1375,7 +1476,7 @@ class tkinterGUI(tk.Frame):
 
 		# make top level of the application stretchable and space filling
 		top = self.winfo_toplevel()
-
+		q = Queue.Queue()
 		global screenH, screenW, vidH, vidW, h, w       
 		screenH = top.winfo_screenheight() - 50 # take 25 pixels to account for top bar x 2
 		screenW = top.winfo_screenwidth()
@@ -1389,13 +1490,15 @@ class tkinterGUI(tk.Frame):
 		# Retrive scalled dimensions according to schema 
 		[vidH, vidW, h, w] = self.masterWidgetSizes()
 
-		videoThread = Video(self)
+		getFrameThread = getFrame(self,q)
+		videoThread = Video(self,q)
 		settingsThread = settingsThreadClass(self)
 		loggingThread = loggingThreadClass(self, startBool, Log_msgIDs)
 		statisticsThread = statisticsThreadClass(self, messages, new_data)
 		myUAVThread = myUAVThreadClass(self)
 		otherDrones = otherdrones(self)
 
+		getFrameThread.setDaemon(True)
 		videoThread.setDaemon(True)
 		settingsThread.setDaemon(True)
 		loggingThread.setDaemon(True)
@@ -1403,6 +1506,7 @@ class tkinterGUI(tk.Frame):
 		myUAVThread.setDaemon(True)
 		otherDrones.setDaemon(True)
 
+		getFrameThread.start()
 		videoThread.start() # becomes mainthread
 		settingsThread.start()
 		loggingThread.start()
@@ -1414,10 +1518,7 @@ class tkinterGUI(tk.Frame):
 		# top.resizable(0,0)
 		
 	def masterWidgetSizes(self):
-		# Obtain Screen Height and Width in pixel units
-		#screenH = self.winfo_screenheight() -50
-		#screenW = self.winfo_screenwidth()
-		#print screenW, screenH
+
 		'''
 		Get Video Dimensions from Primary Camera
 		CAUTION : If primary and Secondary Cameras have different 
@@ -1456,28 +1557,6 @@ class tkinterGUI(tk.Frame):
 		'''
 		return vidH, vidW, h, w
 
-
-		'''
-		h= (screenH-vidH)
-		w= 0.5*(screenW-vidW)
-		 ___________________________________________________________
-		|             |                                             |
-		|   myDrone   |             otherDrones                     |        
-		|     w, h    |            w+VidW, h                        |
-		|_____________|_____________________________________________|
-		|             |                             |               |
-		|    Status   |              Video          |   vidControl  |
-		|     w,      |         Native Camera       |  w, 1/4*vidH  |
-		|   2/3*vidH  |            Resolution       |_______________|
-		|             |           vidW*vidH         |               |
-		|             |                             |     Logging   |
-		|             |                             |  w, 3/4*vidH  |
-		|_____________|                             |               |
-		|    modes    |                             |               |
-		|      w,     |                             |               |
-		|  1/3*vidH   |                             |               |
-		|_____________|_____________________________|_______________|
-		'''
 		'''
 		h= (screenH-vidH)
 		w= 0.5*(screenW-vidW)
@@ -1503,6 +1582,7 @@ class tkinterGUI(tk.Frame):
 def udpConnection():
 	ClientIPaddress = '192.168.7.2' # IP to send the packets
 	portNum = 14551 # port number of destination
+
 	device = 'udpout:' + str(ClientIPaddress) + ':' + str(portNum)
 	baudrate = 57600
 	
@@ -1518,20 +1598,14 @@ def udpConnection():
 	
 	return master
 	'''
-# def UDP_Sending():
-	# UDPSendingThread = send()
-	# UDPSendingThread.setDaemon(True)
-	
-	# UDPSendingThread.start()
-	
-	# UDPSendingThread.join()
 	
 def UDP_Communication(messages, startLogging, Log_msgIDs, new_data):
-	sizeOfBuffer = 10
+	sizeOfBuffer = 16
 	UDPmaster = udpConnection()
 	
 	UDPSendingThread = send(UDPmaster)
-	UDPlistenThread=listener(sizeOfBuffer, messages, startLogging, Log_msgIDs, new_data, UDPmaster) # sizeOfRingBuffer
+	UDPlistenThread = listener(sizeOfBuffer, messages, startLogging, 
+								Log_msgIDs, new_data, UDPmaster) # sizeOfRingBuffer
 	
 	UDPlistenThread.setDaemon(True)
 	UDPSendingThread.setDaemon(True)
@@ -1609,7 +1683,7 @@ def main():
 	#global udpProcess # try to kill updprocess using startTkinter
 	lock = Lock()
 	manager = Manager()
-	startLogging = Value('i', 0, lock = lock)
+	startLogging = Value('i', 0, lock = lock) 	# shared memory maps ( integer, init 0, lock )
 	new_data = Value('i', 0, lock = lock)
 	messages = manager.dict()
 	Log_msgIDs = manager.list()
