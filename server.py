@@ -40,13 +40,13 @@ def send_data(out_q, sock, addr):
 
 
 def read_cam(in_q):
-	start = time.time()
-	time.sleep(0.01)
+	#start = time.time()
+	#time.sleep(0.01)
 	while True:
 
-		start = time.time()
+		#start = time.time()
 		retval,image = vc.read()
-		deltaT = time.time() - start
+		#deltaT = time.time() - start
 		#print "time to read camera: "+str(deltaT)+"\r"
 
 		# Make into numpy array
@@ -61,7 +61,7 @@ def read_cam(in_q):
 q = Queue()
 
 
-HOST = 'localhost'
+HOST = '192.168.1.156'
 PORT = 8888
 sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 addr = (HOST,PORT)
